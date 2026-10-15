@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortalidad en Colombia</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root { --bg:#f7f8fa; --card:#fff; --ink:#1c2330; --mute:#667085; --line:#e4e7ec; --a:#1f6feb; --b:#d9480f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f141b; --card:#171e28; --ink:#e6eaf0; --mute:#98a2b3; --line:#263040; --a:#58a6ff; --b:#ff8a4c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header, main, footer { max-width:1100px; margin:0 auto; padding:16px; }
+  h1 { margin:8px 0 2px; font-size:24px; }
+  .sub { color:var(--mute); margin:0 0 12px; }
+  .filters { display:flex; gap:12px; flex-wrap:wrap; margin:8px 0 16px; }
+  select { padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink); }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .kpi .v { font-size:28px; font-weight:650; }
+  .kpi .l { color:var(--mute); font-size:13px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:12px; }
+  @media (max-width:520px){ .grid{ grid-template-columns:1fr; } }
+  .chart { position:relative; height:320px; }
+  h2 { font-size:15px; margin:0 0 8px; }
+  footer { color:var(--mute); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mortalidad en Colombia</h1>
+  <p class="sub">Defunciones no fetales por año, sexo, departamento, edad y causa.</p>
+  <div class="filters">
+    <label>Año <select id="fAnio"></select></label>
+    <label>Sexo <select id="fSexo"><option value="">Todos</option></select></label>
+  </div>
+</header>
+<main>
+  <section class="kpis">
+    <div class="card kpi"><div class="v" id="kTotal">–</div><div class="l">Defunciones (año y filtros)</div></div>
+    <div class="card kpi"><div class="v" id="kVar">–</div><div class="l">Variación vs. año anterior</div></div>
+    <div class="card kpi"><div class="v" id="kDpto">–</div><div class="l">Departamento con más defunciones (conteo)</div></div>
+    <div class="card kpi"><div class="v" id="kCausa">–</div><div class="l">Causa principal</div></div>
+  </section>
+  <section class="grid">
+    <div class="card"><h2>Evolución anual</h2><div class="chart"><canvas id="cAnual"></canvas></div></div>
+    <div class="card"><h2>Por mes</h2><div class="chart"><canvas id="cMes"></canvas></div></div>
+    <div class="card"><h2>Top 10 departamentos (conteo)</h2><div class="chart"><canvas id="cDpto"></canvas></div></div>
+    <div class="card"><h2>Por grupo de edad</h2><div class="chart"><canvas id="cEdad"></canvas></div></div>
+    <div class="card"><h2>Top 10 causas</h2><div class="chart"><canvas id="cCausa"></canvas></div></div>
+  </section>
+</main>
+<footer id="foot"></footer>
+
+<script>
+const load = f => fetch('data/' + f).then(r => r.ok ? r.json() : []).catch(() => []);
+const fmt = n => n.toLocaleString('es-CO');
+const charts = {};
+let D = {};
+
+function sum(rows, f = () => true) { return rows.filter(f).reduce((s, r) => s + r.n, 0); }
+function groupSum(rows, key) {
+  const m = new Map();
+  rows.forEach(r => m.set(r[key], (m.get(r[key]) || 0) + r.n));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+function draw(id, type, labels, data, label, opts = {}) {
+  const css = getComputedStyle(document.documentElement);
+  const color = css.getPropertyValue('--a').trim();
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {
+    type, data: { labels, datasets: [{ label, data, backgroundColor: color, borderColor: color }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, ...opts }
+  });
+}
+
+function update() {
+  const y = +fAnio.value, s = fSexo.value;
+  const sx = r => !s || r.sexo_l === s;
+  const anual = D.anual.filter(sx);
+  const cur = sum(anual, r => r.anio === y), prev = sum(anual, r => r.anio === y - 1);
+  kTotal.textContent = fmt(cur);
+  kVar.textContent = prev ? ((cur - prev) / prev * 100).toFixed(1) + ' %' : 'n/d';
+
+  const dp = groupSum(D.dpto.filter(r => r.anio === y && sx(r)), 'dpto_l').slice(0, 10);
+  kDpto.textContent = dp[0] ? dp[0][0] : 'n/d';
+  const ca = groupSum(D.causa.filter(r => r.anio === y), 'causa_l').slice(0, 10);
+  kCausa.textContent = ca[0] ? ca[0][0] : 'n/d';
+
+  const byYear = groupSum(anual, 'anio').sort((a, b) => a[0] - b[0]);
+  draw('cAnual', 'line', byYear.map(e => e[0]), byYear.map(e => e[1]), 'Defunciones');
+  const mes = groupSum(D.mensual.filter(r => r.anio === y), 'mes').sort((a, b) => a[0] - b[0]);
+  draw('cMes', 'bar', mes.map(e => e[0]), mes.map(e => e[1]), 'Defunciones');
+  draw('cDpto', 'bar', dp.map(e => e[0]), dp.map(e => e[1]), 'Defunciones', { indexAxis: 'y' });
+  const ed = groupSum(D.edad.filter(r => r.anio === y && sx(r)), 'edad_l');
+  draw('cEdad', 'bar', ed.map(e => e[0]), ed.map(e => e[1]), 'Defunciones');
+  draw('cCausa', 'bar', ca.map(e => e[0]), ca.map(e => e[1]), 'Defunciones', { indexAxis: 'y' });
+}
+
+(async () => {
+  const [meta, anual, mensual, dpto, edad, causa] =
+    await Promise.all(['meta', 'anual', 'mensual', 'dpto', 'edad', 'causa'].map(n => load(n + '.json')));
+  D = { anual, mensual, dpto, edad, causa };
+  (meta.anios || []).slice().reverse().forEach(a => fAnio.add(new Option(a, a)));
+  [...new Set(anual.map(r => r.sexo_l))].forEach(v => fSexo.add(new Option(v, v)));
+  foot.textContent = 'Fuente: ' + (meta.fuente || 'DANE') + '. Generado: ' + (meta.generado || '') +
+    '. Los conteos por departamento no son tasas: no controlan por población.';
+  fAnio.onchange = fSexo.onchange = update;
+  if (meta.anios) update();
+})();
+</script>
+</body>
+</html>
