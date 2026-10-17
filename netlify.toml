@@ -1,0 +1,9 @@
+# Netlify publica solo la carpeta del dashboard (no hay paso de build: los datos ya están
+# procesados en dashboard/data/ y las librerías están en dashboard/vendor/).
+[build]
+  publish = "dashboard"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

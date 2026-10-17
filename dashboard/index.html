@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortalidad en Colombia</title>
+<meta name="description" content="Defunciones no fetales en Colombia por año, sexo, edad, causa y departamento de residencia, con detalle de Medellín. Fuente: DANE, Estadísticas Vitales.">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Mortalidad en Colombia</h1>
+    <p class="sub">Defunciones no fetales por año, sexo, edad, causa y lugar de residencia, con Medellín en detalle.</p>
+
+    <div class="bar">
+      <div class="tabs" role="tablist" aria-label="Vista">
+        <button role="tab" id="tab-col" aria-controls="panel-col" aria-selected="true">Colombia</button>
+        <button role="tab" id="tab-med" aria-controls="panel-med" aria-selected="false" tabindex="-1">Medellín</button>
+      </div>
+      <div class="filters">
+        <label>Año <select id="f-anio"></select></label>
+        <label>Sexo
+          <select id="f-sexo">
+            <option value="">Todos</option>
+            <option value="0">Hombres</option>
+            <option value="1">Mujeres</option>
+          </select>
+        </label>
+        <label>Departamento <select id="f-dpto"><option value="">Todo el país</option></select></label>
+      </div>
+    </div>
+    <p class="ctx" id="ctx" aria-live="polite"></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="error" class="note error" role="alert" hidden></div>
+  <div id="aviso" class="note" hidden></div>
+
+  <!-- ===================== COLOMBIA ===================== -->
+  <section id="panel-col" role="tabpanel" aria-labelledby="tab-col">
+    <div class="kpis">
+      <div class="kpi"><div class="l">Defunciones</div><div class="v" id="k-total">–</div><div class="s" id="k-total-s"></div></div>
+      <div class="kpi"><div class="l" id="k-var-l">Variación anual</div><div class="v" id="k-var">–</div><div class="s" id="k-var-s"></div></div>
+      <div class="kpi"><div class="l">Causa principal</div><div class="v text" id="k-causa">–</div><div class="s" id="k-causa-s"></div></div>
+      <div class="kpi"><div class="l">Defunciones de 65 años o más</div><div class="v" id="k-65">–</div><div class="s" id="k-65-s"></div></div>
+    </div>
+
+    <div class="grid">
+      <article class="card" id="card-anual">
+        <header><div><h2>Defunciones por año</h2><p class="sub2" id="sub-anual"></p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><div class="chart-box"><canvas id="c-anual" role="img" aria-label="Defunciones por año y sexo"></canvas></div></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card" id="card-causas">
+        <header><div><h2>Principales causas de muerte</h2><p class="sub2">10 primeras · lista 6/67 OPS</p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><ol class="rank" id="r-causas"></ol></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card" id="card-edad">
+        <header><div><h2>Por grupo de edad y sexo</h2><p class="sub2" id="sub-edad"></p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><div class="chart-box"><canvas id="c-edad" role="img" aria-label="Defunciones por grupo de edad y sexo"></canvas></div></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card" id="card-dptos">
+        <header><div><h2>Departamentos con más defunciones</h2><p class="sub2">Conteos, no tasas: no controlan por población</p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><ol class="rank" id="r-dptos"></ol><p class="foot" id="foot-dptos"></p></div>
+        <div class="view-table" hidden></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== MEDELLÍN ===================== -->
+  <section id="panel-med" role="tabpanel" aria-labelledby="tab-med" hidden>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Defunciones en Medellín</div><div class="v" id="m-total">–</div><div class="s" id="m-total-s"></div></div>
+      <div class="kpi"><div class="l">Tasa bruta por 100.000 hab.</div><div class="v" id="m-tasa">–</div><div class="s" id="m-tasa-s"></div></div>
+      <div class="kpi"><div class="l">Población proyectada</div><div class="v" id="m-pob">–</div><div class="s" id="m-pob-s"></div></div>
+      <div class="kpi"><div class="l">Densidad media del municipio</div><div class="v" id="m-dens">–</div><div class="s" id="m-dens-s"></div></div>
+    </div>
+
+    <div class="grid">
+      <article class="card" id="card-m-anual">
+        <header><div><h2>Defunciones por año</h2><p class="sub2">Residentes de Medellín</p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><div class="chart-box"><canvas id="c-m-anual" role="img" aria-label="Defunciones de residentes de Medellín por año y sexo"></canvas></div></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card" id="card-m-causas">
+        <header><div><h2>Principales causas de muerte</h2><p class="sub2">10 primeras · lista 6/67 OPS</p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><ol class="rank" id="r-m-causas"></ol></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card" id="card-m-edad">
+        <header><div><h2>Por grupo de edad y sexo</h2><p class="sub2" id="sub-m-edad"></p></div><button class="toggle" type="button">Ver tabla</button></header>
+        <div class="view-chart"><div class="chart-box"><canvas id="c-m-edad" role="img" aria-label="Defunciones en Medellín por grupo de edad y sexo"></canvas></div></div>
+        <div class="view-table" hidden></div>
+      </article>
+
+      <article class="card wide" id="card-mapa">
+        <header><div><h2>Densidad poblacional por comuna y corregimiento</h2>
+          <p class="sub2">Habitantes por km², población proyectada al 30 de junio. El DANE publica mortalidad por municipio, no por comuna: el mapa muestra solo densidad.</p></div></header>
+        <div id="mapa-vacio" class="empty" hidden>
+          <strong>Falta el archivo de densidad.</strong>
+          <p>Corre <code>python scripts/04_medellin_density.py</code> y vuelve a cargar esta página.</p>
+        </div>
+        <div class="mapa-grid" id="mapa-grid">
+          <div>
+            <div id="map" aria-label="Mapa de densidad poblacional de Medellín"></div>
+            <div class="legend" id="map-legend"></div>
+          </div>
+          <div>
+            <ol class="rank" id="r-dens"></ol>
+            <p class="foot">Los corregimientos son zona rural: su densidad no es comparable con la de las comunas.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap" id="foot"></footer>
+
+<script src="vendor/chart.umd.js"></script>
+<script src="vendor/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
