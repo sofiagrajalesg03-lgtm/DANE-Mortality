@@ -1,4 +1,9 @@
 # Mortalidad en Colombia: dashboard (DANE, Estadísticas Vitales)
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 2dd8ed1faed4058194d57e524face5a19f339171
 **Pregunta central:** ¿cómo ha cambiado la mortalidad en Colombia por departamento, sexo, edad y causa,
 y qué se puede decir de Medellín?
 
