@@ -1,7 +1,4 @@
 # Mortalidad en Colombia: dashboard (DANE, Estadísticas Vitales)
-
-Proyecto 2 de la ruta: pasar de guardar datos a **analizarlos y comunicarlos**.
-
 **Pregunta central:** ¿cómo ha cambiado la mortalidad en Colombia por departamento, sexo, edad y causa,
 y qué se puede decir de Medellín?
 
