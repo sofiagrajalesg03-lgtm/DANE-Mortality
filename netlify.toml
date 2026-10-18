@@ -3,6 +3,14 @@
 [build]
   publish = "dashboard"
 
+# Cabeceras de seguridad básicas para todo el sitio.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Los datos cambian pocas veces: el navegador puede reutilizarlos 1 hora.
 [[headers]]
   for = "/data/*"
   [headers.values]
